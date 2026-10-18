@@ -1,114 +1,83 @@
-const API_BASE = 'https://pokeapi.co/api/v2/pokemon';
-
-const form = document.getElementById('searchForm');
-const queryEl = document.getElementById('query');
-const messageEl = document.getElementById('message');
-const resultSection = document.getElementById('result');
-const spriteImg = document.getElementById('spriteImg');
-const pName = document.getElementById('pName');
-const pId = document.getElementById('pId');
-const typesEl = document.getElementById('types');
-const abilitiesEl = document.getElementById('abilities');
-const statsEl = document.getElementById('stats');
-const historyEl = document.getElementById('history');
-const randomBtn = document.getElementById('randomBtn');
-
-let history = [];
-
-function showMessage(text, isError=false){
-  messageEl.textContent = text;
-  messageEl.style.color = isError ? '#b00020' : '';
+:root{
+  --bg:#f7f9fc;
+  --card:#ffffff;
+  --muted:#556070;
+  --accent:#ffcb05;
+  --primary:#3b4cca;
+  --shadow:0 20px 60px rgba(16, 32, 39, 0.22);
 }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#102027;margin:0}
+.container{width:min(980px,calc(100% - 32px));margin:0 auto;padding:28px}
+.site-header{background:linear-gradient(90deg,var(--primary),#6b7bff);color:#fff;padding:28px 0;border-bottom:4px solid rgba(0,0,0,0.06)}
+.site-header h1{margin:0;font-size:1.6rem}
+.site-header p{margin-top:6px;opacity:0.95}
+.main{padding:28px 0}
+.search form{display:flex;gap:8px;align-items:center}
+.search input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid rgba(16,32,39,0.08);font-size:1rem}
+.search button{padding:10px 14px;border-radius:10px;border:none;background:var(--primary);color:#fff;font-weight:700;cursor:pointer}
+#randomBtn{background:#4caf50}
+.message{margin-top:12px;color:var(--muted)}
 
-async function fetchPokemon(idOrName){
-  showMessage('Yükleniyor...');
-  try{
-    const res = await fetch(`${API_BASE}/${idOrName.toString().toLowerCase().trim()}`);
-    if(!res.ok) throw new Error('Bulunamadı');
-    const data = await res.json();
-    showPokemon(data);
-    addHistory(data.name);
-    showMessage('');
-  }catch(err){
-    showMessage('Pokemon bulunamadı. Lütfen doğru isim/ID girin.', true);
-    resultSection.hidden = true;
-  }
+.result {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
 }
-
-function showPokemon(data){
-  resultSection.hidden = false;
-  spriteImg.src = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
-  spriteImg.alt = data.name;
-  pName.textContent = data.name;
-  pId.textContent = `#${data.id}`;
-
-  // types
-  typesEl.innerHTML = '';
-  data.types.forEach(t=>{
-    const s = document.createElement('span');
-    s.className = 'type-pill';
-    s.textContent = t.type.name;
-    typesEl.appendChild(s);
-  });
-
-  // abilities
-  abilitiesEl.innerHTML = '';
-  data.abilities.forEach(a=>{
-    const li = document.createElement('li');
-    li.textContent = a.ability.name.replace('-', ' ');
-    abilitiesEl.appendChild(li);
-  });
-
-  // stats
-  statsEl.innerHTML = '';
-  data.stats.forEach(s=>{
-    const li = document.createElement('li');
-    const name = document.createElement('span');
-    name.textContent = s.stat.name.replace('-', ' ');
-    const val = document.createElement('strong');
-    val.textContent = s.base_stat;
-    li.appendChild(name);
-    li.appendChild(val);
-    statsEl.appendChild(li);
-  });
+.result[hidden] { display: none; }
+.result .backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 16, 26, 0.7);
+  backdrop-filter: blur(6px);
 }
-
-function addHistory(name){
-  if(history.includes(name)) return;
-  history.unshift(name);
-  if(history.length>8) history.pop();
-  renderHistory();
+.result .card{
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+  display:flex;
+  gap:18px;
+  background:var(--card);
+  border-radius:22px;
+  padding:22px 20px 18px;
+  box-shadow:var(--shadow);
+  align-items:center;
+  animation: fadeUp .22s ease;
 }
-
-function renderHistory(){
-  historyEl.innerHTML = '';
-  history.forEach(h=>{
-    const b = document.createElement('button');
-    b.className = 'hist-item';
-    b.textContent = h;
-    b.onclick = ()=> fetchPokemon(h);
-    historyEl.appendChild(b);
-  });
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
-function getRandomInt(max){
-  return Math.floor(Math.random()*max)+1; // 1..max
+.close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(16,32,39,0.08);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
 }
-
-form.addEventListener('submit',e=>{
-  e.preventDefault();
-  const q = queryEl.value.trim();
-  if(!q){ showMessage('Lütfen bir isim veya ID girin.', true); return; }
-  fetchPokemon(q);
-});
-
-randomBtn.addEventListener('click',()=>{
-  // Güncel Pokedex sayısı değişebilir; 1010 civarı pokémon için güvenli bir üst sınır
-  const id = getRandomInt(1010);
-  fetchPokemon(id);
-});
-
-// başlangıçta örnek göster
-window.addEventListener('load',()=>{
-  showMessage('İyi eğlenceler! Örnek olarak "pikachu" aratabilirsiniz.');
-});
+.sprite img{width:220px;height:220px;object-fit:contain}
+.info h2{margin:0;text-transform:capitalize}
+.meta{display:flex;gap:12px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.types{display:flex;gap:8px;flex-wrap:wrap}
+.type-pill{padding:6px 10px;border-radius:999px;background:linear-gradient(90deg,rgba(0,0,0,0.04),rgba(0,0,0,0.02));font-weight:700;text-transform:capitalize}
+.list{list-style:none;padding-left:0;margin-top:10px}
+.list li { margin-bottom: 6px; text-transform: capitalize; }
+.stats li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(16,32,39,0.04)}
+.more{margin-top:22px}
+.history{display:flex;gap:8px;flex-wrap:wrap}
+.hist-item{background:#fff;padding:8px 12px;border-radius:999px;border:1px solid rgba(16,32,39,0.04);cursor:pointer}
+.site-footer{padding:20px 0;border-top:1px solid rgba(16,32,39,0.04);margin-top:36px;color:var(--muted)}
+@media(max-width:720px){
+  .result .card{flex-direction:column;align-items:flex-start;padding-top:42px}
+  .sprite img{width:180px;height:180px}
+}

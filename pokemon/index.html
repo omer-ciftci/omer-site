@@ -1,61 +1,123 @@
-<!doctype html>
-<html lang="tr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PokeExplorer — Pokemon Keşfet</title>
-  <meta name="description" content="Basit ve interaktif bir Pokémon arama sayfası (PokeAPI kullanıyor)." />
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <header class="site-header">
-    <div class="container">
-      <h1>PokeExplorer</h1>
-      <p>İstediğin Pokémon'un adını veya ID'sini yaz, bilgilerini anında gör.</p>
-    </div>
-  </header>
+const API_BASE = 'https://pokeapi.co/api/v2/pokemon';
 
-  <main class="container main">
-    <section class="search">
-      <form id="searchForm" aria-label="Pokemon arama formu">
-        <input id="query" placeholder="Örn: pikachu veya 25" aria-label="Pokemon adı veya id" />
-        <button type="submit">Ara</button>
-        <button type="button" id="randomBtn">Rastgele</button>
-      </form>
-      <div id="message" role="status" aria-live="polite"></div>
-    </section>
+const form = document.getElementById('searchForm');
+const queryEl = document.getElementById('query');
+const messageEl = document.getElementById('message');
+const resultSection = document.getElementById('result');
+const spriteImg = document.getElementById('spriteImg');
+const pName = document.getElementById('pName');
+const pId = document.getElementById('pId');
+const typesEl = document.getElementById('types');
+const abilitiesEl = document.getElementById('abilities');
+const statsEl = document.getElementById('stats');
+const historyEl = document.getElementById('history');
+const randomBtn = document.getElementById('randomBtn');
+const closeBtn = document.querySelector('.close-btn');
 
-    <section id="result" class="result" hidden>
-      <div class="card">
-        <div class="sprite">
-          <img id="spriteImg" alt="pokemon görseli" src="" />
-        </div>
-        <div class="info">
-          <h2 id="pName"></h2>
-          <div class="meta">
-            <span id="pId"></span>
-            <div id="types" class="types"></div>
-          </div>
+let history = [];
 
-          <h3>Yetenekler</h3>
-          <ul id="abilities" class="list"></ul>
+function showMessage(text, isError=false){
+  messageEl.textContent = text;
+  messageEl.style.color = isError ? '#b00020' : '';
+}
 
-          <h3>Temel Statler</h3>
-          <ul id="stats" class="list stats"></ul>
-        </div>
-      </div>
-    </section>
+function closePokemonModal() {
+  resultSection.hidden = true;
+}
 
-    <section id="more" class="more">
-      <h3>Son Aramalar</h3>
-      <div id="history" class="history"></div>
-    </section>
-  </main>
+closeBtn.addEventListener('click', closePokemonModal);
+resultSection.addEventListener('click', (event) => {
+  if (event.target.dataset.close === 'true') closePokemonModal();
+});
 
-  <footer class="site-footer">
-    <div class="container">Veriler PokeAPI'den gelmektedir — <a href="https://pokeapi.co/">pokeapi.co</a></div>
-  </footer>
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !resultSection.hidden) closePokemonModal();
+});
 
-  <script src="script.js" defer></script>
-</body>
-</html>
+async function fetchPokemon(idOrName){
+  showMessage('Yükleniyor...');
+  try{
+    const res = await fetch(`${API_BASE}/${idOrName.toString().toLowerCase().trim()}`);
+    if(!res.ok) throw new Error('Bulunamadı');
+    const data = await res.json();
+    showPokemon(data);
+    addHistory(data.name);
+    showMessage('');
+  }catch(err){
+    showMessage('Pokemon bulunamadı. Lütfen doğru isim/ID girin.', true);
+    resultSection.hidden = true;
+  }
+}
+
+function showPokemon(data){
+  resultSection.hidden = false;
+  spriteImg.src = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+  spriteImg.alt = data.name;
+  pName.textContent = data.name;
+  pId.textContent = `#${data.id}`;
+
+  typesEl.innerHTML = '';
+  data.types.forEach(t=>{
+    const s = document.createElement('span');
+    s.className = 'type-pill';
+    s.textContent = t.type.name;
+    typesEl.appendChild(s);
+  });
+
+  abilitiesEl.innerHTML = '';
+  data.abilities.forEach(a=>{
+    const li = document.createElement('li');
+    li.textContent = a.ability.name.replace('-', ' ');
+    abilitiesEl.appendChild(li);
+  });
+
+  statsEl.innerHTML = '';
+  data.stats.forEach(s=>{
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = s.stat.name.replace('-', ' ');
+    const val = document.createElement('strong');
+    val.textContent = s.base_stat;
+    li.appendChild(name);
+    li.appendChild(val);
+    statsEl.appendChild(li);
+  });
+}
+
+function addHistory(name){
+  if(history.includes(name)) return;
+  history.unshift(name);
+  if(history.length>8) history.pop();
+  renderHistory();
+}
+
+function renderHistory(){
+  historyEl.innerHTML = '';
+  history.forEach(h=>{
+    const b = document.createElement('button');
+    b.className = 'hist-item';
+    b.textContent = h;
+    b.onclick = ()=> fetchPokemon(h);
+    historyEl.appendChild(b);
+  });
+}
+
+function getRandomInt(max){
+  return Math.floor(Math.random()*max)+1;
+}
+
+form.addEventListener('submit',e=>{
+  e.preventDefault();
+  const q = queryEl.value.trim();
+  if(!q){ showMessage('Lütfen bir isim veya ID girin.', true); return; }
+  fetchPokemon(q);
+});
+
+randomBtn.addEventListener('click',()=>{
+  const id = getRandomInt(1010);
+  fetchPokemon(id);
+});
+
+window.addEventListener('load',()=>{
+  showMessage('İyi eğlenceler! Örnek olarak "pikachu" aratabilirsiniz.');
+});
