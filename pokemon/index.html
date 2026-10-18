@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PokeExplorer — Pokemon Keşfet</title>
+  <meta name="description" content="Basit ve interaktif bir Pokémon arama sayfası (PokeAPI kullanıyor)." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>PokeExplorer</h1>
+      <p>İstediğin Pokémon'un adını veya ID'sini yaz, bilgilerini anında gör.</p>
+    </div>
+  </header>
+
+  <main class="container main">
+    <section class="search">
+      <form id="searchForm" aria-label="Pokemon arama formu">
+        <input id="query" placeholder="Örn: pikachu veya 25" aria-label="Pokemon adı veya id" />
+        <button type="submit">Ara</button>
+        <button type="button" id="randomBtn">Rastgele</button>
+      </form>
+      <div id="message" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="result" class="result" hidden>
+      <div class="card">
+        <div class="sprite">
+          <img id="spriteImg" alt="pokemon görseli" src="" />
+        </div>
+        <div class="info">
+          <h2 id="pName"></h2>
+          <div class="meta">
+            <span id="pId"></span>
+            <div id="types" class="types"></div>
+          </div>
+
+          <h3>Yetenekler</h3>
+          <ul id="abilities" class="list"></ul>
+
+          <h3>Temel Statler</h3>
+          <ul id="stats" class="list stats"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="more" class="more">
+      <h3>Son Aramalar</h3>
+      <div id="history" class="history"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">Veriler PokeAPI'den gelmektedir — <a href="https://pokeapi.co/">pokeapi.co</a></div>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

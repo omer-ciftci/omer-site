@@ -1,0 +1,114 @@
+const API_BASE = 'https://pokeapi.co/api/v2/pokemon';
+
+const form = document.getElementById('searchForm');
+const queryEl = document.getElementById('query');
+const messageEl = document.getElementById('message');
+const resultSection = document.getElementById('result');
+const spriteImg = document.getElementById('spriteImg');
+const pName = document.getElementById('pName');
+const pId = document.getElementById('pId');
+const typesEl = document.getElementById('types');
+const abilitiesEl = document.getElementById('abilities');
+const statsEl = document.getElementById('stats');
+const historyEl = document.getElementById('history');
+const randomBtn = document.getElementById('randomBtn');
+
+let history = [];
+
+function showMessage(text, isError=false){
+  messageEl.textContent = text;
+  messageEl.style.color = isError ? '#b00020' : '';
+}
+
+async function fetchPokemon(idOrName){
+  showMessage('Yükleniyor...');
+  try{
+    const res = await fetch(`${API_BASE}/${idOrName.toString().toLowerCase().trim()}`);
+    if(!res.ok) throw new Error('Bulunamadı');
+    const data = await res.json();
+    showPokemon(data);
+    addHistory(data.name);
+    showMessage('');
+  }catch(err){
+    showMessage('Pokemon bulunamadı. Lütfen doğru isim/ID girin.', true);
+    resultSection.hidden = true;
+  }
+}
+
+function showPokemon(data){
+  resultSection.hidden = false;
+  spriteImg.src = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+  spriteImg.alt = data.name;
+  pName.textContent = data.name;
+  pId.textContent = `#${data.id}`;
+
+  // types
+  typesEl.innerHTML = '';
+  data.types.forEach(t=>{
+    const s = document.createElement('span');
+    s.className = 'type-pill';
+    s.textContent = t.type.name;
+    typesEl.appendChild(s);
+  });
+
+  // abilities
+  abilitiesEl.innerHTML = '';
+  data.abilities.forEach(a=>{
+    const li = document.createElement('li');
+    li.textContent = a.ability.name.replace('-', ' ');
+    abilitiesEl.appendChild(li);
+  });
+
+  // stats
+  statsEl.innerHTML = '';
+  data.stats.forEach(s=>{
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = s.stat.name.replace('-', ' ');
+    const val = document.createElement('strong');
+    val.textContent = s.base_stat;
+    li.appendChild(name);
+    li.appendChild(val);
+    statsEl.appendChild(li);
+  });
+}
+
+function addHistory(name){
+  if(history.includes(name)) return;
+  history.unshift(name);
+  if(history.length>8) history.pop();
+  renderHistory();
+}
+
+function renderHistory(){
+  historyEl.innerHTML = '';
+  history.forEach(h=>{
+    const b = document.createElement('button');
+    b.className = 'hist-item';
+    b.textContent = h;
+    b.onclick = ()=> fetchPokemon(h);
+    historyEl.appendChild(b);
+  });
+}
+
+function getRandomInt(max){
+  return Math.floor(Math.random()*max)+1; // 1..max
+}
+
+form.addEventListener('submit',e=>{
+  e.preventDefault();
+  const q = queryEl.value.trim();
+  if(!q){ showMessage('Lütfen bir isim veya ID girin.', true); return; }
+  fetchPokemon(q);
+});
+
+randomBtn.addEventListener('click',()=>{
+  // Güncel Pokedex sayısı değişebilir; 1010 civarı pokémon için güvenli bir üst sınır
+  const id = getRandomInt(1010);
+  fetchPokemon(id);
+});
+
+// başlangıçta örnek göster
+window.addEventListener('load',()=>{
+  showMessage('İyi eğlenceler! Örnek olarak "pikachu" aratabilirsiniz.');
+});
